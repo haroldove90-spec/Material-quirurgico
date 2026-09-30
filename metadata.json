@@ -1,0 +1,6 @@
+{
+  "name": "Laparoscopic.mx - Tienda de Instrumental Quirúrgico y Panel Admin",
+  "description": "Tienda en línea médica de insumos y equipos laparoscópicos en México con panel de administración para gestión de productos, ventas, clientes y carritos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -8,11 +8,10 @@ import {
   ShieldCheck,
   LayoutDashboard,
   Store,
-  ChevronDown,
   Stethoscope,
   X,
   UserCheck,
-  PackageCheck
+  ChevronRight
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -48,107 +47,139 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
-      {/* Top Clinical Utility Bar */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-cyan-400 font-medium">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              COFEPRIS Registros Vigentes
-            </span>
-            <span className="hidden md:inline text-slate-600">·</span>
-            <span className="hidden md:inline text-slate-400">
-              Distribuidor Autorizado Weck® / Teleflex / Scope QX / Purple Surgical
-            </span>
-            <span className="hidden lg:inline text-slate-600">·</span>
-            <span className="hidden lg:inline text-emerald-400">
-              Envíos Refrigerados y Asegurados a todo México
-            </span>
+      {/* 1. TOP UTILITY BAR (RESPONSIVE: SINGLE CLEAN LINE ON MOBILE, EXPANSIVE ON DESKTOP) */}
+      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-3 sm:px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          {/* Mobile top bar layout (< md) */}
+          <div className="flex md:hidden items-center justify-between w-full text-[11px]">
+            <div className="flex items-center gap-1.5 text-cyan-400 font-semibold truncate">
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">COFEPRIS Registros Vigentes</span>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <a
+                href="tel:+523336128900"
+                className="flex items-center gap-1 text-slate-300 hover:text-white"
+              >
+                <Phone className="w-3 h-3 text-cyan-400" />
+                <span className="font-mono text-[10px]">(33) 3612-8900</span>
+              </a>
+
+              <button
+                onClick={() => {
+                  setViewMode(viewMode === 'admin' ? 'store' : 'admin');
+                  if (viewMode === 'store') setAdminTab('dashboard');
+                }}
+                className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-600 text-white cursor-pointer hover:bg-cyan-500 transition-colors"
+              >
+                {viewMode === 'admin' ? 'Ver Tienda' : 'Modo Admin'}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 text-slate-300">
-            <a
-              href="tel:+523336128900"
-              className="flex items-center gap-1 hover:text-white transition-colors"
-            >
-              <Phone className="w-3.5 h-3.5 text-cyan-400" />
-              <span>(33) 3612-8900</span>
-            </a>
-            <span className="text-slate-600 hidden sm:inline">·</span>
+          {/* Desktop top bar layout (>= md) */}
+          <div className="hidden md:flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5 text-cyan-400 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                COFEPRIS Registros Vigentes
+              </span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-400 text-[11px]">
+                Distribuidor Autorizado Weck® / Teleflex / Scope QX / Purple Surgical
+              </span>
+              <span className="hidden lg:inline text-slate-600">·</span>
+              <span className="hidden lg:inline text-emerald-400 text-[11px]">
+                Envíos Urgentes a Hospitales en México
+              </span>
+            </div>
 
-            {/* Customer Portal Shortcut */}
-            <button
-              onClick={() => {
-                setViewMode('customer');
-                setCustomerTab('mis_compras');
-              }}
-              className="hidden sm:flex items-center gap-1 text-cyan-300 hover:text-white transition-colors cursor-pointer font-medium"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Mis Compras ({activeCustomer?.name.split(' ')[1] || 'Médico'})</span>
-            </button>
+            <div className="flex items-center gap-3 text-slate-300 text-xs">
+              <a
+                href="tel:+523336128900"
+                className="flex items-center gap-1 hover:text-white transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="font-medium">(33) 3612-8900</span>
+              </a>
+              <span className="text-slate-600">·</span>
 
-            <span className="text-slate-600">·</span>
-            <button
-              onClick={() => setIsFormalQuoteOpen(true)}
-              className="flex items-center gap-1 hover:text-cyan-300 transition-colors cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Cotización Institucional</span>
-            </button>
-            <span className="text-slate-600">·</span>
-            <button
-              onClick={() => {
-                setViewMode(viewMode === 'admin' ? 'store' : 'admin');
-                if (viewMode === 'store') setAdminTab('dashboard');
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded font-medium text-xs transition-colors bg-cyan-600 text-white hover:bg-cyan-500 cursor-pointer shadow-2xs"
-            >
-              {viewMode === 'store' ? (
-                <>
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Modo Administrador</span>
-                </>
-              ) : (
-                <>
-                  <Store className="w-3.5 h-3.5" />
-                  <span>Ver Tienda (Cliente)</span>
-                </>
-              )}
-            </button>
+              {/* Customer Portal Shortcut */}
+              <button
+                onClick={() => {
+                  setViewMode('customer');
+                  setCustomerTab('mis_compras');
+                }}
+                className="flex items-center gap-1 text-cyan-300 hover:text-white transition-colors cursor-pointer font-medium"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Mis Compras ({activeCustomer?.name.split(' ')[1] || 'Médico'})</span>
+              </button>
+
+              <span className="text-slate-600">·</span>
+              <button
+                onClick={() => setIsFormalQuoteOpen(true)}
+                className="flex items-center gap-1 hover:text-cyan-300 transition-colors cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Cotización Institucional</span>
+              </button>
+
+              <span className="text-slate-600">·</span>
+              <button
+                onClick={() => {
+                  setViewMode(viewMode === 'admin' ? 'store' : 'admin');
+                  if (viewMode === 'store') setAdminTab('dashboard');
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-0.5 rounded font-bold text-xs transition-colors bg-cyan-600 text-white hover:bg-cyan-500 cursor-pointer shadow-2xs"
+              >
+                {viewMode === 'store' ? (
+                  <>
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Modo Administrador</span>
+                  </>
+                ) : (
+                  <>
+                    <Store className="w-3.5 h-3.5" />
+                    <span>Ver Tienda (Cliente)</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Header Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5">
-        <div className="flex items-center justify-between gap-4">
+      {/* 2. MAIN HEADER ROW (NO OVERFLOW, PROPORTIONAL ON ALL SCREENS) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3.5">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1 sm:flex-initial">
             <button
               onClick={() => setViewMode('store')}
-              className="flex items-center gap-2.5 text-left group cursor-pointer"
+              className="flex items-center gap-2 sm:gap-3 text-left group cursor-pointer max-w-full"
             >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-900 flex items-center justify-center text-white shadow-md shadow-cyan-900/10 group-hover:scale-105 transition-transform">
-                <Stethoscope className="w-6 h-6" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-900 flex items-center justify-center text-white shadow-md shadow-cyan-900/10 group-hover:scale-105 transition-transform shrink-0">
+                <Stethoscope className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-bold tracking-tight text-slate-900">
+                  <span className="text-base sm:text-xl font-black tracking-tight text-slate-900 truncate">
                     LAPAROSCOPIC<span className="text-cyan-600">.MX</span>
                   </span>
-                  <span className="text-[10px] font-semibold text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-1.5 py-0.2">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-cyan-800 bg-cyan-50 border border-cyan-200 rounded px-1 sm:px-1.5 py-0.2 shrink-0">
                     MÉXICO
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium">
-                  Instrumental y Equipamiento Quirúrgico
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate hidden sm:block">
+                  Instrumental y Equipamiento Quirúrgico Especializado
                 </p>
               </div>
             </button>
           </div>
 
-          {/* Search Bar with Live Dropdown */}
+          {/* Desktop Search Bar with Live Suggestions Dropdown */}
           <div className="relative flex-1 max-w-lg hidden md:block">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -158,97 +189,89 @@ export const Header: React.FC = () => {
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                placeholder="Buscar por pinza, trocar, grapas, Weck, SKU..."
-                className="w-full pl-10 pr-9 py-2 text-sm bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-cyan-500 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-slate-800 placeholder-slate-400"
+                placeholder="Buscar por insumo, SKU, trocares, clips..."
+                className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 text-slate-800 transition-all placeholder:text-slate-400"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Suggestions dropdown */}
+            {/* Desktop Suggestions */}
             {isSearchFocused && filteredSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden z-50">
-                <div className="p-2 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Resultados encontrados ({filteredSuggestions.length})
+              <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100">
+                <div className="p-2 text-[10px] font-bold uppercase text-slate-400 bg-slate-50">
+                  Resultados sugeridos
                 </div>
-                <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                  {filteredSuggestions.map(product => (
-                    <button
-                      key={product.id}
-                      onClick={() => {
-                        setSelectedProduct(product);
-                        setIsSearchFocused(false);
-                      }}
-                      className="w-full p-2.5 text-left hover:bg-cyan-50/60 flex items-center gap-3 transition-colors cursor-pointer"
-                    >
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-10 h-10 object-cover rounded border border-slate-200 shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-semibold text-slate-900 truncate">
-                          {product.name}
-                        </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                          <span>SKU: {product.sku}</span>
-                          <span>·</span>
-                          <span className="font-mono text-cyan-700 font-semibold">
-                            ${product.price.toLocaleString('es-MX')} MXN
-                          </span>
-                        </div>
+                {filteredSuggestions.map(p => (
+                  <button
+                    key={p.id}
+                    onMouseDown={() => {
+                      setSelectedProduct(p);
+                      setSearchQuery('');
+                    }}
+                    className="w-full p-2.5 text-left flex items-center justify-between hover:bg-cyan-50/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <img src={p.image} alt={p.name} className="w-7 h-7 rounded object-cover border border-slate-100 shrink-0" />
+                      <div className="truncate">
+                        <div className="text-xs font-bold text-slate-900 truncate">{p.name}</div>
+                        <div className="text-[10px] text-slate-500 font-mono">{p.sku} · {p.brand}</div>
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-cyan-800 shrink-0 ml-2">
+                      ${p.price.toLocaleString('es-MX')}
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Right Actions: Cotizar + Cart + Switcher */}
-          <div className="flex items-center gap-3">
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Desktop Quote Button */}
             <button
               onClick={() => setIsFormalQuoteOpen(true)}
-              className="hidden lg:flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
             >
               <FileText className="w-4 h-4 text-cyan-600" />
-              <span>Cotizador Hospital</span>
+              <span>Cotizador</span>
             </button>
 
-            {/* Cart Trigger */}
+            {/* Cart Trigger Button (Always fits comfortably on mobile and desktop) */}
             <button
               onClick={() => setIsCartDrawerOpen(true)}
-              className="relative flex items-center gap-2.5 px-3.5 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-800 text-white transition-all shadow-sm cursor-pointer"
+              className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
               aria-label="Abrir carrito de compras"
             >
               <ShoppingCart className="w-4 h-4" />
-              <span className="text-xs font-semibold hidden sm:inline">Carrito</span>
+              <span className="text-xs font-semibold hidden md:inline">Carrito</span>
               {cartCount > 0 && (
-                <span className="flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-bold bg-white text-cyan-900 rounded-full">
+                <span className="flex items-center justify-center min-w-4.5 h-4.5 sm:min-w-5 sm:h-5 px-1 text-[10px] sm:text-[11px] font-black bg-white text-cyan-900 rounded-full shadow-2xs">
                   {cartCount}
                 </span>
               )}
               {total > 0 && (
-                <span className="text-xs font-medium text-cyan-100 hidden md:inline border-l border-cyan-600 pl-2">
+                <span className="text-xs font-medium text-cyan-100 hidden xl:inline border-l border-cyan-600/80 pl-2">
                   ${total.toLocaleString('es-MX')}
                 </span>
               )}
             </button>
 
-            {/* Customer Portal & Admin Toggles */}
+            {/* Desktop Role Toggles */}
             <div className="border-l border-slate-200 pl-3 hidden sm:flex items-center gap-2">
               <button
                 onClick={() => {
                   setViewMode('customer');
                   setCustomerTab('mis_compras');
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition-colors cursor-pointer"
                 title="Acceder a Mis Compras y Datos Quirúrgicos"
               >
                 <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -260,7 +283,7 @@ export const Header: React.FC = () => {
                   setViewMode('admin');
                   setAdminTab('dashboard');
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-colors cursor-pointer"
                 title="Ir al panel de administración"
               >
                 <LayoutDashboard className="w-3.5 h-3.5 text-cyan-600" />
@@ -270,8 +293,8 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Search input */}
-        <div className="mt-3 md:hidden">
+        {/* 3. MOBILE SEARCH INPUT (CLEAN FULL WIDTH BELOW LOGO ON < MD) */}
+        <div className="mt-2.5 md:hidden">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -279,8 +302,16 @@ export const Header: React.FC = () => {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Buscar instrumental, trocar, clips..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-slate-800"
+              className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-slate-800"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </div>

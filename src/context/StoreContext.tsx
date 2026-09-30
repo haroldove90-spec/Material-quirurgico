@@ -24,11 +24,29 @@ interface ToastNotification {
 }
 
 interface StoreContextType {
-  // View mode
-  viewMode: 'store' | 'admin';
-  setViewMode: (mode: 'store' | 'admin') => void;
+  // View mode: Store, Admin, or Customer Portal
+  viewMode: 'store' | 'admin' | 'customer';
+  setViewMode: (mode: 'store' | 'admin' | 'customer') => void;
   adminTab: 'dashboard' | 'products' | 'register_product' | 'orders' | 'customers' | 'carts' | 'coupons';
   setAdminTab: (tab: 'dashboard' | 'products' | 'register_product' | 'orders' | 'customers' | 'carts' | 'coupons') => void;
+  customerTab: 'mis_compras' | 'rastreo' | 'perfil' | 'deseos';
+  setCustomerTab: (tab: 'mis_compras' | 'rastreo' | 'perfil' | 'deseos') => void;
+
+  // Active Logged-in Customer
+  activeCustomer: Customer;
+  setActiveCustomer: (customer: Customer) => void;
+  updateActiveCustomerProfile: (updates: Partial<Customer>) => void;
+
+  // Customer Wishlist
+  wishlist: string[]; // product IDs
+  toggleWishlist: (productId: string) => void;
+  isWishlisted: (productId: string) => boolean;
+
+  // Quick Reorder
+  reorderItems: (order: Order) => void;
+
+  // Simulated live tracking progress
+  advanceOrderTracking: (orderId: string) => void;
 
   // Products
   products: Product[];
@@ -102,6 +120,8 @@ interface StoreContextType {
   setIsFormalQuoteOpen: (open: boolean) => void;
   lastCreatedOrder: Order | null;
   setLastCreatedOrder: (order: Order | null) => void;
+  selectedTrackingOrder: Order | null;
+  setSelectedTrackingOrder: (order: Order | null) => void;
 
   // Notifications
   toasts: ToastNotification[];
@@ -116,8 +136,9 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // View mode
-  const [viewMode, setViewMode] = useState<'store' | 'admin'>('store');
+  const [viewMode, setViewMode] = useState<'store' | 'admin' | 'customer'>('store');
   const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'register_product' | 'orders' | 'customers' | 'carts' | 'coupons'>('dashboard');
+  const [customerTab, setCustomerTab] = useState<'mis_compras' | 'rastreo' | 'perfil' | 'deseos'>('mis_compras');
 
   // Persistence keys
   const [products, setProducts] = useState<Product[]>(() => {
@@ -144,6 +165,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return stored ? JSON.parse(stored) : INITIAL_CUSTOMERS;
     } catch {
       return INITIAL_CUSTOMERS;
+    }
+  });
+
+  // Active logged in customer (Dr. Alejandro Morales Ramos by default for instant simulation)
+  const [activeCustomer, setActiveCustomer] = useState<Customer>(() => {
+    try {
+      const stored = localStorage.getItem('laparo_active_customer_v1');
+      return stored ? JSON.parse(stored) : INITIAL_CUSTOMERS[0];
+    } catch {
+      return INITIAL_CUSTOMERS[0];
+    }
+  });
+
+  // Wishlist
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('laparo_wishlist_v1');
+      return stored ? JSON.parse(stored) : ['prod-001', 'prod-005', 'prod-007'];
+    } catch {
+      return ['prod-001', 'prod-005', 'prod-007'];
     }
   });
 
@@ -193,6 +234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isFormalQuoteOpen, setIsFormalQuoteOpen] = useState(false);
   const [lastCreatedOrder, setLastCreatedOrder] = useState<Order | null>(null);
+  const [selectedTrackingOrder, setSelectedTrackingOrder] = useState<Order | null>(null);
 
   // Toast notifications
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
@@ -233,6 +275,99 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error(e);
     }
   }, [customers]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('laparo_active_customer_v1', JSON.stringify(activeCustomer));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [activeCustomer]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('laparo_wishlist_v1', JSON.stringify(wishlist));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [wishlist]);
+
+  // Wishlist toggle
+  const toggleWishlist = (productId: string) => {
+    setWishlist(prev => {
+      const exists = prev.includes(productId);
+      const updated = exists ? prev.filter(id => id !== productId) : [...prev, productId];
+      showToast(exists ? 'Insumo removido de su lista guardada' : 'Insumo agregado a su lista de favoritos quirúrgicos', 'info');
+      return updated;
+    });
+  };
+
+  const isWishlisted = (productId: string) => wishlist.includes(productId);
+
+  // Update customer profile
+  const updateActiveCustomerProfile = (updates: Partial<Customer>) => {
+    setActiveCustomer(prev => ({ ...prev, ...updates }));
+    setCustomers(prev => prev.map(c => c.id === activeCustomer.id ? { ...c, ...updates } : c));
+    showToast('Perfil médico actualizado exitosamente', 'success');
+  };
+
+  // Quick reorder all items from past order
+  const reorderItems = (order: Order) => {
+    let countAdded = 0;
+    order.items.forEach(orderItem => {
+      const matched = products.find(p => p.id === orderItem.productId) || products.find(p => p.sku === orderItem.sku);
+      if (matched && matched.stock > 0) {
+        addToCart(matched, orderItem.quantity);
+        countAdded += orderItem.quantity;
+      }
+    });
+
+    if (countAdded > 0) {
+      setIsCartDrawerOpen(true);
+      showToast(`Se agregaron ${countAdded} piezas de la orden ${order.id} al carrito`, 'success');
+    } else {
+      showToast('Los insumos seleccionados no cuentan con stock inmediato', 'error');
+    }
+  };
+
+  // Simulate advancing the tracking status
+  const advanceOrderTracking = (orderId: string) => {
+    setOrders(prev => prev.map(o => {
+      if (o.id === orderId) {
+        let nextStatus: OrderStatus = o.orderStatus;
+        let newTracking = o.trackingNumber;
+        let newCarrier = o.carrier;
+
+        if (o.orderStatus === 'pendiente') {
+          nextStatus = 'confirmado';
+        } else if (o.orderStatus === 'confirmado') {
+          nextStatus = 'preparacion_quirurgica';
+        } else if (o.orderStatus === 'preparacion_quirurgica') {
+          nextStatus = 'enviado';
+          if (!newTracking) newTracking = `DHL-${Math.floor(100000000 + Math.random() * 900000000)}`;
+          if (!newCarrier) newCarrier = 'DHL Express Quirúrgico Priority';
+        } else if (o.orderStatus === 'enviado') {
+          nextStatus = 'entregado';
+        }
+
+        const updated: Order = {
+          ...o,
+          orderStatus: nextStatus,
+          trackingNumber: newTracking,
+          carrier: newCarrier,
+          paymentStatus: nextStatus === 'entregado' ? 'pagado' : o.paymentStatus
+        };
+
+        if (selectedTrackingOrder && selectedTrackingOrder.id === orderId) {
+          setSelectedTrackingOrder(updated);
+        }
+
+        showToast(`Envío de la orden ${o.id}: ${nextStatus.replace('_', ' ').toUpperCase()}`, 'info');
+        return updated;
+      }
+      return o;
+    }));
+  };
 
   useEffect(() => {
     try {
@@ -541,6 +676,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setViewMode,
         adminTab,
         setAdminTab,
+        customerTab,
+        setCustomerTab,
+        activeCustomer,
+        setActiveCustomer,
+        updateActiveCustomerProfile,
+        wishlist,
+        toggleWishlist,
+        isWishlisted,
+        reorderItems,
+        advanceOrderTracking,
+        selectedTrackingOrder,
+        setSelectedTrackingOrder,
         products,
         addProduct,
         updateProduct,

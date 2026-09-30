@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import {
   X,
@@ -12,7 +12,10 @@ import {
   ShieldCheck,
   Printer,
   ShoppingBag,
-  ExternalLink
+  ExternalLink,
+  Banknote,
+  KeyRound,
+  UserCheck
 } from 'lucide-react';
 import { Order, PaymentMethod } from '../../types';
 
@@ -30,44 +33,64 @@ export const CheckoutModal: React.FC = () => {
     lastCreatedOrder,
     setLastCreatedOrder,
     setViewMode,
-    setAdminTab
+    setAdminTab,
+    setCustomerTab,
+    activeCustomer
   } = useStore();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
-  // Form State
+  // Form State initialized with realistic Mexican surgical client data
   const [formData, setFormData] = useState({
     // Doctor / Hospital
-    name: 'Dr. Fernando Zepeda Ortiz',
-    email: 'dr.zepeda@cirugialaparoscopica.mx',
-    phone: '+52 33 1948 2011',
-    specialty: 'Cirugía General y Laparoscopía',
-    hospitalOrClinic: 'Hospital Ángeles del Carmen',
-    cedulaProfesional: '8392019',
+    name: activeCustomer ? activeCustomer.name : 'Dr. Fernando Zepeda Ortiz',
+    email: activeCustomer ? activeCustomer.email : 'dr.zepeda@cirugialaparoscopica.mx',
+    phone: activeCustomer ? activeCustomer.phone : '+52 33 1948 2011',
+    specialty: activeCustomer?.specialty || 'Cirugía General y Laparoscopía',
+    hospitalOrClinic: activeCustomer?.hospital || 'Hospital Ángeles del Carmen',
+    cedulaProfesional: activeCustomer?.cedulaProfesional || '8392019',
 
     // Shipping
-    street: 'Av. Manuel Acuña',
-    exteriorNumber: '2760',
-    neighborhood: 'Prados Providencia',
-    city: 'Guadalajara',
-    state: 'Jalisco',
-    zipCode: '44670',
-    hospitalWard: 'Pabellón Quirúrgico - Quirófano 2 (A nombre de Dr. Zepeda)',
+    street: activeCustomer?.address?.street || 'Av. Manuel Acuña',
+    exteriorNumber: activeCustomer?.address?.exteriorNumber || '2760',
+    neighborhood: activeCustomer?.address?.neighborhood || 'Prados Providencia',
+    city: activeCustomer?.address?.city || 'Guadalajara',
+    state: activeCustomer?.address?.state || 'Jalisco',
+    zipCode: activeCustomer?.address?.zipCode || '44670',
+    hospitalWard: activeCustomer?.address?.hospitalWard || 'Pabellón Quirúrgico - Quirófano 2 (A nombre de Dr. Zepeda)',
 
     // Billing
     requiresInvoice: true,
-    rfc: 'ZEOF840912KM4',
-    legalName: 'FERNANDO ZEPEDA ORTIZ',
-    taxRegime: '612 - Personas Físicas con Actividades Empresariales y Profesionales',
+    rfc: activeCustomer?.rfc || 'ZEOF840912KM4',
+    legalName: activeCustomer?.taxName || 'FERNANDO ZEPEDA ORTIZ',
+    taxRegime: activeCustomer?.taxRegime || '612 - Personas Físicas con Actividades Empresariales y Profesionales',
     cfdiUse: 'G03 - Gastos en general',
-    billingEmail: 'facturas@cirugiazepeda.com',
+    billingEmail: activeCustomer?.email || 'facturas@cirugiazepeda.com',
 
     // Payment
-    paymentMethod: 'spei' as PaymentMethod,
+    paymentMethod: 'contra_entrega' as PaymentMethod,
     cardNumber: '•••• •••• •••• 4242',
     cardExp: '08/28',
     cardCvc: '•••'
   });
+
+  // Sync if activeCustomer changes
+  useEffect(() => {
+    if (activeCustomer) {
+      setFormData(prev => ({
+        ...prev,
+        name: activeCustomer.name,
+        email: activeCustomer.email,
+        phone: activeCustomer.phone,
+        specialty: activeCustomer.specialty || prev.specialty,
+        hospitalOrClinic: activeCustomer.hospital || prev.hospitalOrClinic,
+        cedulaProfesional: activeCustomer.cedulaProfesional || prev.cedulaProfesional,
+        rfc: activeCustomer.rfc || prev.rfc,
+        legalName: activeCustomer.taxName || prev.legalName,
+        taxRegime: activeCustomer.taxRegime || prev.taxRegime
+      }));
+    }
+  }, [activeCustomer]);
 
   if (!isCheckoutModalOpen) return null;
 
@@ -85,6 +108,11 @@ export const CheckoutModal: React.FC = () => {
       subtotal: item.product.price * item.quantity,
       image: item.product.image
     }));
+
+    // Generate Surgical Reception PIN for Contra Entrega
+    const generatedPin = formData.paymentMethod === 'contra_entrega'
+      ? `QX-${Math.floor(1000 + Math.random() * 9000)}`
+      : undefined;
 
     const newOrder = createOrder({
       customer: {
@@ -119,11 +147,27 @@ export const CheckoutModal: React.FC = () => {
       shippingCost,
       total,
       paymentMethod: formData.paymentMethod,
-      paymentStatus: formData.paymentMethod === 'tarjeta' ? 'pagado' : 'pendiente',
-      orderStatus: formData.paymentMethod === 'tarjeta' ? 'confirmado' : 'pendiente',
-      carrier: 'DHL Express Quirúrgico Priority',
-      notes: 'Pedido generado desde la tienda en línea Laparoscopic.mx'
+      paymentStatus: formData.paymentMethod === 'tarjeta'
+        ? 'pagado'
+        : formData.paymentMethod === 'contra_entrega'
+          ? 'contra_entrega_pendiente'
+          : 'pendiente',
+      orderStatus: formData.paymentMethod === 'contra_entrega'
+        ? 'confirmado'
+        : formData.paymentMethod === 'tarjeta'
+          ? 'confirmado'
+          : 'pendiente',
+      carrier: formData.paymentMethod === 'contra_entrega'
+        ? 'Mensajería Médica Directa (Custodia de Cadena Quirúrgica)'
+        : 'DHL Express Quirúrgico Priority',
+      notes: formData.paymentMethod === 'contra_entrega'
+        ? `[CONTRA ENTREGA] Liquidación programada contra entrega hospitalaria. PIN de verificación: ${generatedPin}. Cobro en terminal o efectivo.`
+        : 'Pedido generado desde la tienda en línea Laparoscopic.mx'
     });
+
+    if (generatedPin && newOrder) {
+      newOrder.deliveryPin = generatedPin;
+    }
 
     setLastCreatedOrder(newOrder);
     setStep(5);
@@ -437,6 +481,34 @@ export const CheckoutModal: React.FC = () => {
               </div>
 
               <div className="space-y-2.5">
+                {/* Pago Contra Entrega */}
+                <label className={`block p-3.5 rounded-xl border cursor-pointer transition-all ${formData.paymentMethod === 'contra_entrega' ? 'border-emerald-600 bg-emerald-50/50 shadow-xs' : 'border-slate-200 hover:border-slate-300'}`}>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="contra_entrega"
+                      checked={formData.paymentMethod === 'contra_entrega'}
+                      onChange={() => handleInputChange('paymentMethod', 'contra_entrega')}
+                      className="mt-1 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <Banknote className="w-4 h-4 text-emerald-600" />
+                          Pago Contra Entrega en Hospital / Quirófano (Simulado)
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                          Efectivo o Terminal Móvil
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-1">
+                        Paga al recibir el material estéril directamente en almacén o recepción del quirófano. Se generará un <strong>PIN Quirúrgico de Recepción</strong> para validar la entrega.
+                      </p>
+                    </div>
+                  </div>
+                </label>
+
                 {/* SPEI Interbancario */}
                 <label className={`block p-3.5 rounded-xl border cursor-pointer transition-all ${formData.paymentMethod === 'spei' ? 'border-cyan-600 bg-cyan-50/50 shadow-xs' : 'border-slate-200 hover:border-slate-300'}`}>
                   <div className="flex items-start gap-3">
@@ -603,6 +675,39 @@ export const CheckoutModal: React.FC = () => {
                   </span>
                 </div>
 
+                {/* Contra Entrega Notice & PIN */}
+                {lastCreatedOrder.paymentMethod === 'contra_entrega' && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-[12px] text-emerald-950 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-emerald-900">
+                        <Banknote className="w-4 h-4 text-emerald-600" />
+                        <span>Modalidad Contra Entrega Quirúrgica Activada</span>
+                      </div>
+                      <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
+                        Simulación Activa
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-emerald-300">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+                        <KeyRound className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                          PIN de Validación al Recibir:
+                        </div>
+                        <div className="text-lg font-black font-mono text-emerald-700 tracking-wider">
+                          {lastCreatedOrder.deliveryPin || 'QX-4892'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-emerald-800">
+                      El repartidor médico asignado solicitará este <strong>PIN</strong> en la recepción de Quirófano o Almacén antes de cobrar los <strong>${lastCreatedOrder.total.toLocaleString('es-MX')} MXN</strong> en efectivo o con terminal bancaria.
+                    </p>
+                  </div>
+                )}
+
                 {/* SPEI Instructions if spei */}
                 {lastCreatedOrder.paymentMethod === 'spei' && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 space-y-1">
@@ -616,13 +721,26 @@ export const CheckoutModal: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
                 <button
                   onClick={handlePrintReceipt}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Imprimir Comprobante</span>
+                </button>
+
+                {/* Direct link to Customer Portal Orders */}
+                <button
+                  onClick={() => {
+                    setIsCheckoutModalOpen(false);
+                    setViewMode('customer');
+                    setCustomerTab('mis_compras');
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Ver en Mis Compras (Cliente)</span>
                 </button>
 
                 {/* Direct link to Admin Panel Orders tracking */}
@@ -632,10 +750,10 @@ export const CheckoutModal: React.FC = () => {
                     setViewMode('admin');
                     setAdminTab('orders');
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Ver en Seguimiento de Ventas (Admin)</span>
+                  <span>Ver en Panel Admin</span>
                 </button>
 
                 <button
@@ -643,10 +761,10 @@ export const CheckoutModal: React.FC = () => {
                     setIsCheckoutModalOpen(false);
                     setStep(1);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>Continuar en la Tienda</span>
+                  <span>Continuar en Tienda</span>
                 </button>
               </div>
             </div>

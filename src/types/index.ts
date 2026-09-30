@@ -16,6 +16,7 @@ export interface Product {
   comparePrice?: number;
   stock: number;
   minStockThreshold: number;
+  minStockAlert?: number;
   presentation: string;
   diameterMm?: number;
   lengthMm?: number;
@@ -40,10 +41,11 @@ export type OrderStatus =
   | 'confirmado' 
   | 'preparacion_quirurgica' 
   | 'enviado' 
+  | 'en_camino'
   | 'entregado' 
   | 'cancelado';
 
-export type PaymentMethod = 'spei' | 'tarjeta' | 'orden_compra';
+export type PaymentMethod = 'spei' | 'tarjeta' | 'orden_compra' | 'contra_entrega';
 
 export interface OrderCustomer {
   name: string;
@@ -96,10 +98,11 @@ export interface Order {
   shippingCost: number;
   total: number;
   paymentMethod: PaymentMethod;
-  paymentStatus: 'pagado' | 'pendiente' | 'rechazado';
+  paymentStatus: 'pagado' | 'pendiente' | 'rechazado' | 'contra_entrega_pendiente';
   orderStatus: OrderStatus;
   trackingNumber?: string;
   carrier?: string;
+  deliveryPin?: string; // Verification code for hospital ward handover
   notes?: string;
 }
 
@@ -110,6 +113,10 @@ export interface Customer {
   phone: string;
   rfc?: string;
   hospitalOrClinic: string;
+  hospital?: string; // alias
+  taxName?: string;
+  taxRegime?: string;
+  address?: ShippingAddress;
   city: string;
   state: string;
   specialty: string;

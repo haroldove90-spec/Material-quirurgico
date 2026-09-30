@@ -139,15 +139,26 @@ export const Footer: React.FC = () => {
           </ul>
         </div>
 
-        {/* Admin quick entry */}
+        {/* Portals entry */}
         <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
           <div className="flex items-center gap-2 text-white font-bold text-xs">
             <LayoutDashboard className="w-4 h-4 text-cyan-400" />
-            <span>Acceso al Administrador</span>
+            <span>Accesos Directos por Rol</span>
           </div>
           <p className="text-[11px] text-slate-400">
-            Administración completa de productos, ventas, clientes registrados y carritos de compras.
+            Administración completa de productos y seguimiento a ventas, o acceso a compras del médico/cliente.
           </p>
+
+          <button
+            onClick={() => {
+              setViewMode('customer');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="w-full py-2 px-3 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+          >
+            <span>Portal Médico / Mis Compras</span>
+          </button>
+
           <button
             onClick={() => {
               setViewMode('admin');

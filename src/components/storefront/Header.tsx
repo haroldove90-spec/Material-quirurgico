@@ -10,7 +10,9 @@ import {
   Store,
   ChevronDown,
   Stethoscope,
-  X
+  X,
+  UserCheck,
+  PackageCheck
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -23,9 +25,11 @@ export const Header: React.FC = () => {
     viewMode,
     setViewMode,
     setAdminTab,
+    setCustomerTab,
     setIsFormalQuoteOpen,
     products,
-    setSelectedProduct
+    setSelectedProduct,
+    activeCustomer
   } = useStore();
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -62,7 +66,7 @@ export const Header: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-300">
+          <div className="flex items-center gap-3 text-slate-300">
             <a
               href="tel:+523336128900"
               className="flex items-center gap-1 hover:text-white transition-colors"
@@ -70,6 +74,20 @@ export const Header: React.FC = () => {
               <Phone className="w-3.5 h-3.5 text-cyan-400" />
               <span>(33) 3612-8900</span>
             </a>
+            <span className="text-slate-600 hidden sm:inline">·</span>
+
+            {/* Customer Portal Shortcut */}
+            <button
+              onClick={() => {
+                setViewMode('customer');
+                setCustomerTab('mis_compras');
+              }}
+              className="hidden sm:flex items-center gap-1 text-cyan-300 hover:text-white transition-colors cursor-pointer font-medium"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Mis Compras ({activeCustomer?.name.split(' ')[1] || 'Médico'})</span>
+            </button>
+
             <span className="text-slate-600">·</span>
             <button
               onClick={() => setIsFormalQuoteOpen(true)}
@@ -84,7 +102,7 @@ export const Header: React.FC = () => {
                 setViewMode(viewMode === 'admin' ? 'store' : 'admin');
                 if (viewMode === 'store') setAdminTab('dashboard');
               }}
-              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded font-medium text-xs transition-colors bg-cyan-600 text-white hover:bg-cyan-500 cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded font-medium text-xs transition-colors bg-cyan-600 text-white hover:bg-cyan-500 cursor-pointer shadow-2xs"
             >
               {viewMode === 'store' ? (
                 <>
@@ -223,28 +241,31 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Quick Admin Toggle */}
-            <div className="border-l border-slate-200 pl-3 hidden sm:block">
-              {viewMode === 'store' ? (
-                <button
-                  onClick={() => {
-                    setViewMode('admin');
-                    setAdminTab('dashboard');
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-cyan-600" />
-                  <span>Admin Tienda</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setViewMode('store')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Store className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Tienda Pública</span>
-                </button>
-              )}
+            {/* Customer Portal & Admin Toggles */}
+            <div className="border-l border-slate-200 pl-3 hidden sm:flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setViewMode('customer');
+                  setCustomerTab('mis_compras');
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer"
+                title="Acceder a Mis Compras y Datos Quirúrgicos"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Portal Médico</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setViewMode('admin');
+                  setAdminTab('dashboard');
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
+                title="Ir al panel de administración"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-cyan-600" />
+                <span>Admin Tienda</span>
+              </button>
             </div>
           </div>
         </div>
